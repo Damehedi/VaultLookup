@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vault Lookup by Mehedi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #F7F5EE;
+    --surface: #FFFFFF;
+    --ink: #1A1A1A;
+    --muted: #6B6B68;
+    --faint: #A8A7A0;
+    --line: #E4E1D6;
+    --line-strong: #C9C5B4;
+    --accent: #B5471F;
+    --accent-soft: #F3E4DA;
+    --highlight: #FCE38B;
+    --shadow: 0 1px 0 rgba(26,26,26,0.04);
+    --green: #4A9D5B;
+    --red: #C44545;
+    --blue: #3D5A80;
+    --amber: #D49C2C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ============ HEADER ============ */
+  header {
+    border-bottom: 1px solid var(--line);
+    padding: 28px 40px;
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(12px);
+    background: rgba(247, 245, 238, 0.92);
+  }
+  .header-inner {
+    max-width: 1380px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px;
+  }
+  .brand { display: flex; align-items: flex-start; gap: 14px; }
+  .brand-mark {
+    width: 36px; height: 36px;
+    background: var(--ink); color: var(--bg);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'Instrument Serif', serif;
+    font-size: 24px; font-style: italic;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .brand-text { display: flex; flex-direction: column; gap: 2px; }
+  .brand h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 30px; font-weight: 400;
+    letter-spacing: -0.02em; line-height: 1;
+  }
+  .brand h1 em { font-style: italic; color: var(--accent); }
+  .brand .byline {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  .brand .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .status {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--faint); }
+  .status-dot.active { background: var(--green); box-shadow: 0 0 0 3px rgba(74, 157, 91, 0.15); }
+
+  main { max-width: 1380px; margin: 0 auto; padding: 40px; }
+
+  /* ============ UPLOAD VIEW ============ */
+  .upload-section { display: block; }
+  .upload-section.hidden { display: none; }
+  .upload-hero { text-align: center; padding: 60px 20px 40px; }
+  .upload-hero h2 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 56px; font-weight: 400;
+    letter-spacing: -0.025em; line-height: 1.05;
+    margin-bottom: 16px;
+    max-width: 680px;
+    margin-left: auto; margin-right: auto;
+  }
+  .upload-hero h2 em { font-style: italic; color: var(--accent); }
+  .upload-hero p { color: var(--muted); font-size: 16px; max-width: 520px; margin: 0 auto; }
+
+  #drop-zone {
+    margin: 40px auto 0;
+    max-width: 640px;
+    border: 1.5px dashed var(--line-strong);
+    border-radius: 6px;
+    padding: 48px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: var(--surface);
+  }
+  #drop-zone:hover { border-color: var(--accent); background: var(--accent-soft); }
+  #drop-zone.drag-over { border-color: var(--accent); background: var(--accent-soft); transform: scale(1.005); }
+  .upload-icon {
+    width: 48px; height: 48px; margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg); border-radius: 8px; border: 1px solid var(--line);
+  }
+  .upload-icon svg { width: 22px; height: 22px; stroke: var(--ink); }
+  #drop-zone .title { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+  #drop-zone .subtitle { font-size: 13px; color: var(--muted); }
+  #drop-zone .browse-link {
+    color: var(--accent); font-weight: 500;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  #file-input { display: none; }
+
+  .features {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    margin: 60px auto 0;
+    max-width: 640px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .feature { background: var(--bg); padding: 20px 22px; }
+  .feature .num {
+    font-family: 'Instrument Serif', serif; font-style: italic;
+    font-size: 24px; color: var(--accent);
+    line-height: 1; margin-bottom: 8px; display: block;
+  }
+  .feature .label { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+  /* ============ APP VIEW ============ */
+  .app-section { display: none; }
+  .app-section.active { display: block; }
+
+  /* Files panel */
+  .files-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .files-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    gap: 12px; flex-wrap: wrap;
+  }
+  .files-panel-header .title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .files-panel-header .title strong {
+    font-family: 'Instrument Serif', serif; font-style: italic;
+    color: var(--accent); font-size: 15px; font-weight: 400; margin: 0 4px;
+  }
+  .files-panel-actions { display: flex; gap: 6px; }
+  .files-list { display: flex; flex-direction: column; max-height: 180px; overflow-y: auto; }
+  .file-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--line);
+    transition: background 0.1s;
+  }
+  .file-row:last-child { border-bottom: none; }
+  .file-row:hover { background: var(--bg); }
+  .file-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .file-row .file-name {
+    flex: 1; min-width: 0;
+    font-size: 13px; font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .file-row .file-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .file-row .remove-btn {
+    background: none; border: none; cursor: pointer;
+    padding: 6px; border-radius: 4px; color: var(--faint);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.1s;
+  }
+  .file-row .remove-btn:hover { background: var(--line); color: var(--accent); }
+  .file-row .remove-btn svg { width: 14px; height: 14px; stroke: currentColor; }
+
+  /* Buttons */
+  .btn {
+    font-family: 'Inter', sans-serif;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+    padding: 8px 14px;
+    border-radius: 4px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.1s;
+    white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .btn-accent { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .btn-accent:hover { background: var(--accent); border-color: var(--accent); }
+  .btn-ghost { background: transparent; border-color: transparent; }
+  .btn-ghost:hover { background: var(--line); color: var(--ink); border-color: transparent; }
+  .btn-sm { padding: 6px 10px; font-size: 12px; }
+  .btn svg { width: 14px; height: 14px; stroke: currentColor; }
+
+  /* Filter panel */
+  .filter-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .filter-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    gap: 12px; flex-wrap: wrap;
+  }
+  .filter-panel-header .title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .filter-panel-header .title strong {
+    font-family: 'Instrument Serif', serif; font-style: italic;
+    color: var(--accent); font-size: 15px; font-weight: 400; margin: 0 4px;
+  }
+  .filter-panel-actions { display: flex; gap: 6px; }
+  .filter-panel-body { padding: 18px; }
+
+  .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .filter-input-wrap {
+    position: relative;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    transition: border-color 0.1s, background 0.1s;
+  }
+  .filter-input-wrap:focus-within { border-color: var(--ink); background: var(--surface); }
+  .filter-input-wrap.has-value { border-color: var(--accent); background: var(--accent-soft); }
+  .filter-input-wrap .filter-label {
+    position: absolute;
+    top: 6px; left: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    pointer-events: none;
+  }
+  .filter-input-wrap input {
+    width: 100%;
+    border: none; background: transparent;
+    padding: 22px 30px 10px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px; color: var(--ink);
+    outline: none;
+  }
+  .filter-input-wrap input::placeholder { color: var(--faint); }
+  .filter-input-wrap .clear-filter-btn {
+    position: absolute; right: 6px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    padding: 4px; border-radius: 3px;
+    color: var(--muted); display: none;
+  }
+  .filter-input-wrap.has-value .clear-filter-btn { display: flex; align-items: center; }
+  .filter-input-wrap .clear-filter-btn:hover { background: var(--line); color: var(--ink); }
+  .filter-input-wrap .clear-filter-btn svg { width: 12px; height: 12px; stroke: currentColor; }
+
+  /* Checkbox group */
+  .checkbox-group {
+    grid-column: 1 / -1;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 14px 16px;
+  }
+  .checkbox-group.has-value { border-color: var(--accent); background: var(--accent-soft); }
+  .checkbox-group-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .checkbox-group.has-value .checkbox-group-label { color: var(--accent); }
+  .checkbox-options { display: flex; flex-wrap: wrap; gap: 6px; }
+  .checkbox-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 12px;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    font-size: 12px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.1s;
+    user-select: none;
+  }
+  .checkbox-chip:hover { border-color: var(--ink); }
+  .checkbox-chip input { display: none; }
+  .checkbox-chip .check-box {
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--line-strong);
+    border-radius: 3px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.1s;
+    flex-shrink: 0;
+  }
+  .checkbox-chip .check-box svg { width: 9px; height: 9px; stroke: var(--bg); opacity: 0; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .checkbox-chip.checked { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .checkbox-chip.checked .check-box { background: var(--accent); border-color: var(--accent); }
+  .checkbox-chip.checked .check-box svg { opacity: 1; }
+  .checkbox-chip .count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; opacity: 0.6;
+  }
+
+  /* Show more filters toggle */
+  .filter-toggle-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 14px; padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .toggle-link {
+    background: none; border: none; cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px; font-weight: 500;
+    color: var(--muted);
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 0;
+  }
+  .toggle-link:hover { color: var(--ink); }
+  .toggle-link .chevron { transition: transform 0.15s; }
+  .toggle-link.open .chevron { transform: rotate(180deg); }
+  .secondary-filters { display: none; margin-top: 14px; }
+  .secondary-filters.open { display: grid; }
+
+  /* Source chips */
+  .source-chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 16px;
+  }
+  .source-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .source-chip:hover { border-color: var(--ink); }
+  .source-chip.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .source-chip .chip-swatch { width: 8px; height: 8px; border-radius: 50%; }
+  .source-chip .chip-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; opacity: 0.7;
+  }
+
+  /* Stats bar with view toggle */
+  .stats-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 4px 16px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 16px;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .stats-bar .count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--muted);
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .stats-bar .count strong {
+    font-family: 'Instrument Serif', serif; font-style: italic;
+    color: var(--accent);
+    font-size: 16px; font-weight: 400; margin: 0 3px;
+  }
+  .stats-bar .actions { display: flex; gap: 8px; align-items: center; }
+
+  .view-toggle {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 2px;
+    gap: 0;
+  }
+  .view-toggle button {
+    background: transparent; border: none; cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 3px;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .view-toggle button svg { width: 12px; height: 12px; stroke: currentColor; }
+  .view-toggle button.active { background: var(--ink); color: var(--bg); }
+  .view-toggle button:not(.active):hover { color: var(--ink); }
+
+  /* ============ RESULTS - GRID ============ */
+  #results.grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 14px;
+  }
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left-width: 3px;
+    border-radius: 6px;
+    padding: 18px 20px;
+    transition: all 0.12s ease;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .result-card:hover { border-color: var(--ink); transform: translateY(-1px); }
+  .result-card .row-num {
+    position: absolute;
+    top: 12px; right: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--faint);
+    letter-spacing: 0.08em;
+  }
+  .result-card .name-block {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 14px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 500; font-size: 13px;
+    flex-shrink: 0; letter-spacing: 0.02em;
+  }
+  .name-block .name-area { flex: 1; min-width: 0; }
+  .name-block .name {
+    font-family: 'Instrument Serif', serif;
+    font-size: 20px; line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .name-block .source-line {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .source-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 7px;
+    background: var(--bg);
+    border-radius: 3px;
+    color: var(--ink);
+    font-weight: 500; letter-spacing: 0.04em;
+    max-width: 200px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .source-tag .tag-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  .fields { display: flex; flex-direction: column; gap: 8px; }
+  .field {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 12px;
+    font-size: 13px;
+    align-items: baseline;
+  }
+  .field-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    line-height: 1.6;
+  }
+  .field-value { color: var(--ink); word-break: break-word; line-height: 1.5; }
+  .field-value.empty { color: var(--faint); font-style: italic; }
+  mark { background: var(--highlight); color: var(--ink); padding: 1px 3px; border-radius: 2px; }
+
+  /* Status badges in cards */
+  .status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .status-badge.s-reserved, .status-badge.s-confirmed, .status-badge.s-booked { background: rgba(61,90,128,0.15); color: var(--blue); }
+  .status-badge.s-cancelled, .status-badge.s-canceled, .status-badge.s-no-show, .status-badge.s-noshow { background: rgba(196,69,69,0.13); color: var(--red); }
+  .status-badge.s-checked-out, .status-badge.s-checkedout, .status-badge.s-departed, .status-badge.s-completed { background: rgba(168,167,160,0.25); color: var(--muted); }
+  .status-badge.s-checked-in, .status-badge.s-checkedin, .status-badge.s-in-house, .status-badge.s-inhouse, .status-badge.s-arrived { background: rgba(74,157,91,0.15); color: var(--green); }
+  .status-badge.s-pending, .status-badge.s-on-hold, .status-badge.s-onhold, .status-badge.s-waitlist { background: rgba(212,156,44,0.15); color: var(--amber); }
+
+  /* ============ RESULTS - LIST ============ */
+  #results.list-view {
+    display: flex; flex-direction: column;
+    gap: 6px;
+  }
+  .result-row {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left-width: 3px;
+    border-radius: 6px;
+    padding: 14px 18px;
+    transition: all 0.1s ease;
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-columns: auto minmax(180px, 1.4fr) minmax(180px, 1.2fr) minmax(150px, 1fr) minmax(140px, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+  }
+  .result-row:hover { border-color: var(--ink); }
+  .result-row .row-avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 500; font-size: 12px;
+    flex-shrink: 0;
+  }
+  .result-row .row-name-block { min-width: 0; }
+  .result-row .row-name {
+    font-family: 'Instrument Serif', serif;
+    font-size: 17px;
+    line-height: 1.2; letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .result-row .row-sub {
+    font-size: 12px; color: var(--muted);
+    margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .result-row .row-col {
+    min-width: 0;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .result-row .row-col-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--muted);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .result-row .row-col-value {
+    font-size: 13px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .result-row .row-col-value.muted { color: var(--muted); font-style: italic; }
+  .result-row .row-source-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .result-row .row-source-tag .tag-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  @media (max-width: 1100px) {
+    .result-row {
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+    }
+    .result-row .row-col, .result-row > .row-source-tag {
+      grid-column: 2;
+    }
+  }
+
+  /* Placeholder/empty state */
+  .placeholder {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--muted);
+    border: 1px dashed var(--line-strong);
+    border-radius: 6px;
+    background: var(--surface);
+  }
+  .placeholder .ph-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px; color: var(--ink); margin-bottom: 8px;
+  }
+  .placeholder .ph-title em { font-style: italic; color: var(--accent); }
+  .placeholder .ph-sub { font-size: 14px; max-width: 380px; margin: 0 auto; }
+
+  footer {
+    max-width: 1380px;
+    margin: 60px auto 0;
+    padding: 24px 40px;
+    border-top: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    display: flex; justify-content: space-between;
+    letter-spacing: 0.04em; gap: 12px; flex-wrap: wrap;
+  }
+  footer .privacy { display: flex; align-items: center; gap: 6px; }
+  footer .privacy svg { width: 12px; height: 12px; stroke: var(--muted); }
+
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--ink); color: var(--bg);
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 768px) {
+    header { padding: 20px; }
+    main { padding: 20px; }
+    .brand h1 { font-size: 22px; }
+    .upload-hero h2 { font-size: 36px; }
+    .features { grid-template-columns: 1fr; }
+    #results.grid-view { grid-template-columns: 1fr; }
+    footer { padding: 20px; flex-direction: column; gap: 8px; }
+    .filter-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <span class="brand-mark">M</span>
+      <div class="brand-text">
+        <h1>Vault Lookup<em>.</em></h1>
+        <span class="byline">by Mehedi</span>
+        <span class="tag">Secured local data search engine</span>
+      </div>
+    </div>
+    <div class="status">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Awaiting files</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="upload-section" id="upload-view">
+    <div class="upload-hero">
+      <h2>Search any booking in <em>seconds</em>, not scrolls.</h2>
+      <p>Upload one or more data files and filter instantly by guest name, dates, status, room type, or anything else. Everything stays on your computer.</p>
+    </div>
+
+    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <div class="title">Drop your data files here</div>
+      <div class="subtitle">or <span class="browse-link">browse to upload</span> &nbsp;·&nbsp; select multiple · supports .xlsx, .xls, .csv</div>
+    </div>
+    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" multiple />
+
+    <div class="features">
+      <div class="feature">
+        <span class="num">01</span>
+        <span class="label">Filter by every column — name, date, status, room, anything.</span>
+      </div>
+      <div class="feature">
+        <span class="num">02</span>
+        <span class="label">Combine multiple files into one searchable index.</span>
+      </div>
+      <div class="feature">
+        <span class="num">03</span>
+        <span class="label">Fully local. Your data never leaves this browser.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="app-section" id="app-view">
+
+    <div class="files-panel">
+      <div class="files-panel-header">
+        <div class="title">Loaded files · <strong id="files-count">0</strong> · <strong id="records-count">0</strong> records</div>
+        <div class="files-panel-actions">
+          <button class="btn btn-sm" onclick="document.getElementById('file-input').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add files
+          </button>
+          <button class="btn btn-sm btn-ghost" onclick="resetApp()">Reset all</button>
+        </div>
+      </div>
+      <div class="files-list" id="files-list"></div>
+    </div>
+
+    <div class="filter-panel">
+      <div class="filter-panel-header">
+        <div class="title">Filter by · <strong id="active-filter-count">0</strong> active</div>
+        <div class="filter-panel-actions">
+          <button class="btn btn-sm btn-ghost" onclick="clearAllFilters()">Clear filters</button>
+          <button class="btn btn-sm btn-accent" onclick="exportResults()">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export CSV
+          </button>
+        </div>
+      </div>
+      <div class="filter-panel-body">
+        <div class="filter-grid" id="filter-grid-primary"></div>
+        <div class="filter-toggle-row" id="filter-toggle-row" style="display:none;">
+          <button class="toggle-link" id="filter-toggle-btn" onclick="toggleSecondaryFilters()">
+            <span id="filter-toggle-label">Show all filters</span>
+            <svg class="chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+        </div>
+        <div class="filter-grid secondary-filters" id="filter-grid-secondary"></div>
+      </div>
+    </div>
+
+    <div class="source-chips" id="source-chips"></div>
+
+    <div class="stats-bar">
+      <div class="count" id="result-count">Showing <strong>0</strong> records</div>
+      <div class="actions">
+        <div class="view-toggle">
+          <button id="view-grid-btn" class="active" onclick="setViewMode('grid')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Grid
+          </button>
+          <button id="view-list-btn" onclick="setViewMode('list')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+              <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            List
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="results" class="grid-view"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div>Vault Lookup by Mehedi · Secured local data search engine</div>
+  <div class="privacy">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+    100% local · No data leaves your computer
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const FILE_COLORS = ['#B5471F', '#2E7D8F', '#7A6D3F', '#5B4B8A', '#8B4513', '#1F6E3D', '#963A60', '#3D5A80'];
+
+// Column-detection patterns
+const PRIORITY_PATTERNS = [
+  { key: 'firstName', test: /^(first.?name|fname|given.?name)$/i },
+  { key: 'lastName',  test: /^(last.?name|lname|surname|family.?name)$/i },
+  { key: 'name',      test: /^(name|guest.?name|customer.?name|full.?name|client.?name)$/i },
+  { key: 'email',     test: /e.?mail/i },
+  { key: 'arrival',   test: /^(arrival|check.?in|check.?in.?date|arr|arr.?date|from.?date)$/i },
+  { key: 'departure', test: /^(departure|check.?out|check.?out.?date|dep|dep.?date|to.?date)$/i },
+  { key: 'status',    test: /^(status|reservation.?status|booking.?status|state|res.?status)$/i },
+  { key: 'roomType',  test: /^(room.?type|room.?category|rt|category)$/i },
+  { key: 'room',      test: /^(room|room.?no|room.?number|room.?#|rm|rm.?no)$/i },
+  { key: 'phone',     test: /^(phone|mobile|tel|telephone|contact.?(no|number))$/i },
+];
+
+const STATUS_LIKE_NAME = /status|state/i;
+const CHECKBOX_CARDINALITY_MAX = 12; // columns with <= this many unique values become checkboxes
+
+// State
+let loadedFiles = [];
+let allRows = [];
+let unionHeaders = [];
+let currentResults = [];
+let activeSourceFilter = '__ALL__';
+let fileIdCounter = 0;
+let filters = {};        // { columnName: 'text' | Set<value> }
+let columnMeta = {};     // { columnName: { type: 'text'|'checkbox', uniqueValues: [...], priorityKey: ... } }
+let viewMode = 'grid';
+let secondaryFiltersOpen = false;
+
+// DOM refs
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const uploadView = document.getElementById('upload-view');
+const appView = document.getElementById('app-view');
+const resultsEl = document.getElementById('results');
+const resultCount = document.getElementById('result-count');
+const filesList = document.getElementById('files-list');
+const filesCount = document.getElementById('files-count');
+const recordsCount = document.getElementById('records-count');
+const sourceChips = document.getElementById('source-chips');
+const statusDot = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
+const toast = document.getElementById('toast');
+const filterGridPrimary = document.getElementById('filter-grid-primary');
+const filterGridSecondary = document.getElementById('filter-grid-secondary');
+const filterToggleRow = document.getElementById('filter-toggle-row');
+const filterToggleBtn = document.getElementById('filter-toggle-btn');
+const filterToggleLabel = document.getElementById('filter-toggle-label');
+const activeFilterCount = document.getElementById('active-filter-count');
+
+// ============ Drag & drop ============
+['dragover', 'dragenter'].forEach(evt => {
+  dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+});
+['dragleave', 'drop'].forEach(evt => {
+  dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.remove('drag-over'); });
+});
+dropZone.addEventListener('drop', e => {
+  const files = Array.from(e.dataTransfer.files);
+  if (files.length) handleFiles(files);
+});
+
+document.body.addEventListener('dragover', e => { if (appView.classList.contains('active')) e.preventDefault(); });
+document.body.addEventListener('drop', e => {
+  if (!appView.classList.contains('active')) return;
+  e.preventDefault();
+  const files = Array.from(e.dataTransfer.files);
+  if (files.length) handleFiles(files);
+});
+
+fileInput.addEventListener('change', e => {
+  const files = Array.from(e.target.files);
+  if (files.length) handleFiles(files);
+  fileInput.value = '';
+});
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// ============ File handling ============
+function handleFiles(files) {
+  const promises = files.map(file => readOneFile(file));
+  Promise.all(promises).then(results => {
+    const ok = results.filter(r => r.ok);
+    const failed = results.filter(r => !r.ok);
+    if (ok.length) {
+      ok.forEach(r => addFileToState(r.payload));
+      rebuildIndex();
+      showApp();
+      const totalRecs = ok.reduce((s, r) => s + r.payload.rows.length, 0);
+      if (failed.length === 0) {
+        showToast(`Loaded ${ok.length} file${ok.length === 1 ? '' : 's'} · ${totalRecs.toLocaleString()} records`);
+      } else {
+        showToast(`Loaded ${ok.length} · skipped ${failed.length} unreadable`);
+      }
+    } else if (failed.length) {
+      showToast('Could not read those files — try .xlsx, .xls or .csv');
+    }
+  });
+}
+
+function readOneFile(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, { type: 'array', cellDates: true, cellNF: false, cellText: false });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(ws, { defval: '', raw: true });
+        if (!json.length) return resolve({ ok: false, file });
+        const headers = Object.keys(json[0]);
+        resolve({ ok: true, payload: { name: file.name, rows: json, headers, sheetName: wb.SheetNames[0] } });
+      } catch (err) {
+        console.error('Read fail:', file.name, err);
+        resolve({ ok: false, file });
+      }
+    };
+    reader.onerror = () => resolve({ ok: false, file });
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function addFileToState({ name, rows, headers, sheetName }) {
+  const id = 'f' + (++fileIdCounter);
+  const color = FILE_COLORS[(fileIdCounter - 1) % FILE_COLORS.length];
+  const nameCol = detectNameCol(headers);
+  loadedFiles.push({ id, name, rows, headers, nameCol, color, sheetName });
+}
+
+function removeFile(id) {
+  loadedFiles = loadedFiles.filter(f => f.id !== id);
+  if (activeSourceFilter === id) activeSourceFilter = '__ALL__';
+  if (!loadedFiles.length) { resetApp(); return; }
+  rebuildIndex();
+}
+
+function rebuildIndex() {
+  allRows = [];
+  loadedFiles.forEach(f => {
+    f.rows.forEach((row, idx) => {
+      allRows.push({ __fileId: f.id, __rowIdx: idx, ...row });
+    });
+  });
+
+  const seen = new Set();
+  unionHeaders = [];
+  loadedFiles.forEach(f => {
+    f.headers.forEach(h => {
+      if (!seen.has(h)) { seen.add(h); unionHeaders.push(h); }
+    });
+  });
+
+  buildColumnMeta();
+  filters = {}; // reset filters on file change
+  renderFilesList();
+  renderSourceChips();
+  renderFilterPanel();
+  statusDot.classList.add('active');
+  statusText.textContent = `${allRows.length.toLocaleString()} records · ${loadedFiles.length} file${loadedFiles.length === 1 ? '' : 's'}`;
+  filesCount.textContent = loadedFiles.length;
+  recordsCount.textContent = allRows.length.toLocaleString();
+  runSearch();
+}
+
+function showApp() {
+  uploadView.classList.add('hidden');
+  appView.classList.add('active');
+}
+
+function detectNameCol(hdrs) {
+  const priority = ['guest name','customer name','full name','client name','contact name','account name','name','customer','client','contact','last name','firstname','first name'];
+  for (const p of priority) {
+    const found = hdrs.find(h => h.toLowerCase().trim() === p);
+    if (found) return found;
+  }
+  for (const p of priority) {
+    const found = hdrs.find(h => h.toLowerCase().includes(p));
+    if (found) return found;
+  }
+  return hdrs[0];
+}
+
+// ============ Column metadata (filter type detection) ============
+function buildColumnMeta() {
+  columnMeta = {};
+  unionHeaders.forEach(col => {
+    const priorityKey = detectPriorityKey(col);
+    const values = new Set();
+    let nonEmptyCount = 0;
+    for (const row of allRows) {
+      const v = row[col];
+      if (v === '' || v == null) continue;
+      nonEmptyCount++;
+      values.add(formatCellValue(v));
+      if (values.size > CHECKBOX_CARDINALITY_MAX + 1) break;
+    }
+    const uniqueValues = Array.from(values).sort();
+    const isStatusLike = STATUS_LIKE_NAME.test(col) || priorityKey === 'status';
+    const useCheckbox = isStatusLike && uniqueValues.length > 0 && uniqueValues.length <= CHECKBOX_CARDINALITY_MAX;
+    columnMeta[col] = {
+      type: useCheckbox ? 'checkbox' : 'text',
+      uniqueValues: useCheckbox ? recountUniqueValues(col) : null,
+      priorityKey,
+      isPriority: !!priorityKey
+    };
+  });
+}
+
+function recountUniqueValues(col) {
+  const counts = new Map();
+  for (const row of allRows) {
+    const v = row[col];
+    if (v === '' || v == null) continue;
+    const formatted = formatCellValue(v);
+    counts.set(formatted, (counts.get(formatted) || 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([value, count]) => ({ value, count }));
+}
+
+function detectPriorityKey(col) {
+  for (const p of PRIORITY_PATTERNS) {
+    if (p.test.test(col.trim())) return p.key;
+  }
+  return null;
+}
+
+// ============ Filter panel rendering ============
+function renderFilterPanel() {
+  const priorityOrder = ['firstName','lastName','name','arrival','departure','status','roomType','room','email','phone'];
+
+  const priorityCols = unionHeaders
+    .filter(c => columnMeta[c].isPriority)
+    .sort((a, b) => {
+      const ai = priorityOrder.indexOf(columnMeta[a].priorityKey);
+      const bi = priorityOrder.indexOf(columnMeta[b].priorityKey);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    });
+
+  const secondaryCols = unionHeaders.filter(c => !columnMeta[c].isPriority);
+
+  filterGridPrimary.innerHTML = priorityCols.map(c => renderFilterInput(c)).join('');
+  filterGridSecondary.innerHTML = secondaryCols.map(c => renderFilterInput(c)).join('');
+
+  if (secondaryCols.length) {
+    filterToggleRow.style.display = 'flex';
+    filterToggleLabel.textContent = secondaryFiltersOpen
+      ? `Hide ${secondaryCols.length} more filter${secondaryCols.length === 1 ? '' : 's'}`
+      : `Show ${secondaryCols.length} more filter${secondaryCols.length === 1 ? '' : 's'}`;
+  } else {
+    filterToggleRow.style.display = 'none';
+  }
+
+  attachFilterListeners();
+}
+
+function renderFilterInput(col) {
+  const meta = columnMeta[col];
+  if (meta.type === 'checkbox') {
+    return renderCheckboxGroup(col, meta);
+  }
+  const id = 'flt_' + slug(col);
+  return `
+    <div class="filter-input-wrap" data-col="${escapeAttr(col)}">
+      <span class="filter-label">${escapeHtml(col)}</span>
+      <input type="text" id="${id}" placeholder="Search…" autocomplete="off" />
+      <button class="clear-filter-btn" data-clear="${escapeAttr(col)}" aria-label="Clear">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  `;
+}
+
+function renderCheckboxGroup(col, meta) {
+  const options = meta.uniqueValues.map(({ value, count }) => `
+    <label class="checkbox-chip" data-col="${escapeAttr(col)}" data-value="${escapeAttr(value)}">
+      <span class="check-box">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
+      <span>${escapeHtml(value)}</span>
+      <span class="count">${count}</span>
+    </label>
+  `).join('');
+  return `
+    <div class="checkbox-group" data-col="${escapeAttr(col)}">
+      <div class="checkbox-group-label">${escapeHtml(col)}</div>
+      <div class="checkbox-options">${options}</div>
+    </div>
+  `;
+}
+
+function attachFilterListeners() {
+  // Text filters
+  document.querySelectorAll('.filter-input-wrap input').forEach(input => {
+    const col = input.closest('.filter-input-wrap').dataset.col;
+    input.value = filters[col] || '';
+    input.closest('.filter-input-wrap').classList.toggle('has-value', !!input.value);
+    let to;
+    input.addEventListener('input', () => {
+      clearTimeout(to);
+      to = setTimeout(() => {
+        const val = input.value.trim();
+        if (val) filters[col] = val;
+        else delete filters[col];
+        input.closest('.filter-input-wrap').classList.toggle('has-value', !!val);
+        updateActiveFilterCount();
+        runSearch();
+      }, 80);
+    });
+  });
+
+  // Clear filter buttons
+  document.querySelectorAll('.clear-filter-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const col = btn.dataset.clear;
+      const wrap = btn.closest('.filter-input-wrap');
+      const input = wrap.querySelector('input');
+      input.value = '';
+      delete filters[col];
+      wrap.classList.remove('has-value');
+      updateActiveFilterCount();
+      runSearch();
+    });
+  });
+
+  // Checkbox chips
+  document.querySelectorAll('.checkbox-chip').forEach(chip => {
+    const col = chip.dataset.col;
+    const value = chip.dataset.value;
+    // restore state
+    if (filters[col] instanceof Set && filters[col].has(value)) {
+      chip.classList.add('checked');
+      chip.closest('.checkbox-group').classList.add('has-value');
+    }
+    chip.addEventListener('click', e => {
+      e.preventDefault();
+      chip.classList.toggle('checked');
+      if (!(filters[col] instanceof Set)) filters[col] = new Set();
+      if (chip.classList.contains('checked')) {
+        filters[col].add(value);
+      } else {
+        filters[col].delete(value);
+        if (filters[col].size === 0) delete filters[col];
+      }
+      chip.closest('.checkbox-group').classList.toggle('has-value', filters[col] && filters[col].size > 0);
+      updateActiveFilterCount();
+      runSearch();
+    });
+  });
+}
+
+function updateActiveFilterCount() {
+  let count = 0;
+  for (const k in filters) {
+    if (filters[k] instanceof Set) { if (filters[k].size > 0) count++; }
+    else if (filters[k] && filters[k].length > 0) count++;
+  }
+  activeFilterCount.textContent = count;
+}
+
+function toggleSecondaryFilters() {
+  secondaryFiltersOpen = !secondaryFiltersOpen;
+  filterGridSecondary.classList.toggle('open', secondaryFiltersOpen);
+  filterToggleBtn.classList.toggle('open', secondaryFiltersOpen);
+  const secondaryCount = filterGridSecondary.children.length;
+  filterToggleLabel.textContent = secondaryFiltersOpen
+    ? `Hide ${secondaryCount} more filter${secondaryCount === 1 ? '' : 's'}`
+    : `Show ${secondaryCount} more filter${secondaryCount === 1 ? '' : 's'}`;
+}
+
+function clearAllFilters() {
+  filters = {};
+  document.querySelectorAll('.filter-input-wrap input').forEach(i => { i.value = ''; i.closest('.filter-input-wrap').classList.remove('has-value'); });
+  document.querySelectorAll('.checkbox-chip').forEach(c => c.classList.remove('checked'));
+  document.querySelectorAll('.checkbox-group').forEach(g => g.classList.remove('has-value'));
+  updateActiveFilterCount();
+  runSearch();
+}
+
+// ============ Files & sources rendering ============
+function renderFilesList() {
+  filesList.innerHTML = loadedFiles.map(f => `
+    <div class="file-row">
+      <span class="file-swatch" style="background:${f.color}"></span>
+      <span class="file-name">${escapeHtml(f.name)}</span>
+      <span class="file-meta">${f.rows.length.toLocaleString()} ROWS · ${f.headers.length} COLS · NAME: ${escapeHtml(f.nameCol)}</span>
+      <button class="remove-btn" onclick="removeFile('${f.id}')" aria-label="Remove file" title="Remove this file">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+function renderSourceChips() {
+  if (loadedFiles.length <= 1) { sourceChips.innerHTML = ''; return; }
+  const allChip = `<div class="source-chip ${activeSourceFilter === '__ALL__' ? 'active' : ''}" onclick="setSourceFilter('__ALL__')">
+    All files <span class="chip-count">${allRows.length.toLocaleString()}</span>
+  </div>`;
+  const fileChips = loadedFiles.map(f => `
+    <div class="source-chip ${activeSourceFilter === f.id ? 'active' : ''}" onclick="setSourceFilter('${f.id}')">
+      <span class="chip-swatch" style="background:${f.color}"></span>
+      ${escapeHtml(f.name.replace(/\.[^.]+$/, ''))}
+      <span class="chip-count">${f.rows.length.toLocaleString()}</span>
+    </div>
+  `).join('');
+  sourceChips.innerHTML = allChip + fileChips;
+}
+
+function setSourceFilter(fileId) {
+  activeSourceFilter = fileId;
+  renderSourceChips();
+  runSearch();
+}
+
+// ============ Search/filter logic ============
+function runSearch() {
+  let pool = allRows;
+  if (activeSourceFilter !== '__ALL__') {
+    pool = pool.filter(r => r.__fileId === activeSourceFilter);
+  }
+
+  // Apply each filter (AND across filters)
+  const filterKeys = Object.keys(filters);
+  if (filterKeys.length) {
+    pool = pool.filter(row => {
+      for (const col of filterKeys) {
+        const f = filters[col];
+        const cell = formatCellValue(row[col]);
+        if (f instanceof Set) {
+          if (!f.has(cell)) return false;
+        } else {
+          if (!cell.toLowerCase().includes(f.toLowerCase())) return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  currentResults = pool;
+  const activeCount = filterKeys.length + (activeSourceFilter !== '__ALL__' ? 1 : 0);
+  if (activeCount > 0) {
+    resultCount.innerHTML = `Found <strong>${currentResults.length.toLocaleString()}</strong> of <strong>${allRows.length.toLocaleString()}</strong> records`;
+  } else {
+    resultCount.innerHTML = `Showing <strong>${currentResults.length.toLocaleString()}</strong> records`;
+  }
+
+  renderResults();
+}
+
+// ============ Results rendering ============
+function setViewMode(mode) {
+  viewMode = mode;
+  resultsEl.className = mode + '-view';
+  document.getElementById('view-grid-btn').classList.toggle('active', mode === 'grid');
+  document.getElementById('view-list-btn').classList.toggle('active', mode === 'list');
+  renderResults();
+}
+
+function renderResults() {
+  if (!currentResults.length) {
+    resultsEl.innerHTML = `
+      <div class="placeholder" style="grid-column: 1 / -1;">
+        <div class="ph-title">No matches <em>found</em></div>
+        <div class="ph-sub">Try adjusting your filters, clearing some, or switching to a different file.</div>
+      </div>`;
+    return;
+  }
+
+  const max = 150;
+  const slice = currentResults.slice(0, max);
+
+  if (viewMode === 'list') {
+    resultsEl.innerHTML = slice.map(row => renderListRow(row)).join('');
+  } else {
+    resultsEl.innerHTML = slice.map(row => renderGridCard(row)).join('');
+  }
+
+  if (currentResults.length > max) {
+    resultsEl.innerHTML += `
+      <div class="placeholder" style="grid-column: 1 / -1; padding: 24px;">
+        <div class="ph-sub">Showing first ${max} of ${currentResults.length.toLocaleString()} matches. Add more filters to narrow further.</div>
+      </div>`;
+  }
+}
+
+function findFirstCol(file, priorityKey) {
+  for (const h of file.headers) {
+    if (columnMeta[h] && columnMeta[h].priorityKey === priorityKey) return h;
+  }
+  return null;
+}
+
+function getDisplayName(file, row) {
+  // Try first+last name combo, then full name col
+  const firstCol = findFirstCol(file, 'firstName');
+  const lastCol = findFirstCol(file, 'lastName');
+  if (firstCol || lastCol) {
+    const fn = firstCol ? formatCellValue(row[firstCol]) : '';
+    const ln = lastCol ? formatCellValue(row[lastCol]) : '';
+    const combo = [fn, ln].filter(Boolean).join(' ').trim();
+    if (combo) return combo;
+  }
+  const nameCol = findFirstCol(file, 'name') || file.nameCol;
+  return formatCellValue(row[nameCol]) || '—';
+}
+
+function renderGridCard(row) {
+  const file = loadedFiles.find(f => f.id === row.__fileId);
+  if (!file) return '';
+  const idxInFile = row.__rowIdx;
+  const name = getDisplayName(file, row);
+  const otherCols = file.headers.filter(h => h !== file.nameCol);
+
+  const fieldsHtml = otherCols.map(col => {
+    const val = row[col];
+    const valStr = formatCellValue(val);
+    const isEmpty = valStr === '';
+    const display = isEmpty ? '—' : valStr;
+    let valueHtml;
+    // Check if this is a status column - render as badge
+    const meta = columnMeta[col];
+    if (!isEmpty && meta && meta.priorityKey === 'status') {
+      valueHtml = `<span class="status-badge ${statusClass(valStr)}">${escapeHtml(valStr)}</span>`;
+    } else {
+      const term = filters[col];
+      if (term && typeof term === 'string') {
+        valueHtml = highlightText(display, term);
+      } else {
+        valueHtml = escapeHtml(display);
+      }
+    }
+    return `<div class="field">
+      <span class="field-label">${escapeHtml(col)}</span>
+      <span class="field-value ${isEmpty ? 'empty' : ''}">${valueHtml}</span>
+    </div>`;
+  }).join('');
+
+  const showSourceTag = loadedFiles.length > 1;
+
+  return `<article class="result-card" style="border-left-color:${file.color}">
+    <span class="row-num">#${(idxInFile + 1).toString().padStart(4, '0')}</span>
+    <div class="name-block">
+      <div class="avatar" style="background:${hexToSoft(file.color)};color:${file.color}">${escapeHtml(getInitials(name))}</div>
+      <div class="name-area">
+        <div class="name">${escapeHtml(name)}</div>
+        <div class="source-line">
+          ${showSourceTag ? `<span class="source-tag"><span class="tag-dot" style="background:${file.color}"></span>${escapeHtml(file.name)}</span>` : `<span>Row ${idxInFile + 1}</span>`}
+        </div>
+      </div>
+    </div>
+    <div class="fields">${fieldsHtml}</div>
+  </article>`;
+}
+
+function renderListRow(row) {
+  const file = loadedFiles.find(f => f.id === row.__fileId);
+  if (!file) return '';
+
+  const name = getDisplayName(file, row);
+  const emailCol = findFirstCol(file, 'email');
+  const arrCol = findFirstCol(file, 'arrival');
+  const depCol = findFirstCol(file, 'departure');
+  const roomTypeCol = findFirstCol(file, 'roomType');
+  const roomCol = findFirstCol(file, 'room');
+  const statusCol = findFirstCol(file, 'status');
+
+  const email = emailCol ? formatCellValue(row[emailCol]) : '';
+  const arrival = arrCol ? formatCellValue(row[arrCol]) : '';
+  const departure = depCol ? formatCellValue(row[depCol]) : '';
+  const roomType = roomTypeCol ? formatCellValue(row[roomTypeCol]) : '';
+  const roomNum = roomCol ? formatCellValue(row[roomCol]) : '';
+  const status = statusCol ? formatCellValue(row[statusCol]) : '';
+
+  const datesText = (arrival || departure)
+    ? `${arrival || '—'} → ${departure || '—'}`
+    : '';
+  const roomText = [roomType, roomNum && `#${roomNum}`].filter(Boolean).join(' · ');
+  const statusHtml = status
+    ? `<span class="status-badge ${statusClass(status)}">${escapeHtml(status)}</span>`
+    : '<span class="row-col-value muted">—</span>';
+
+  const showSourceTag = loadedFiles.length > 1;
+
+  return `<div class="result-row" style="border-left-color:${file.color}">
+    <div class="row-avatar" style="background:${hexToSoft(file.color)};color:${file.color}">${escapeHtml(getInitials(name))}</div>
+    <div class="row-name-block">
+      <div class="row-name">${escapeHtml(name)}</div>
+      <div class="row-sub">${email ? escapeHtml(email) : '<span style="font-style:italic;">no email</span>'}</div>
+    </div>
+    <div class="row-col">
+      <span class="row-col-label">Stay</span>
+      <span class="row-col-value ${!datesText ? 'muted' : ''}">${datesText ? escapeHtml(datesText) : '—'}</span>
+    </div>
+    <div class="row-col">
+      <span class="row-col-label">Room</span>
+      <span class="row-col-value ${!roomText ? 'muted' : ''}">${roomText ? escapeHtml(roomText) : '—'}</span>
+    </div>
+    <div class="row-col">
+      <span class="row-col-label">Status</span>
+      <span class="row-col-value">${statusHtml}</span>
+    </div>
+    ${showSourceTag ? `<span class="row-source-tag"><span class="tag-dot" style="background:${file.color}"></span>${escapeHtml(file.name.replace(/\.[^.]+$/, ''))}</span>` : '<span></span>'}
+  </div>`;
+}
+
+function statusClass(status) {
+  const s = String(status).toLowerCase().trim().replace(/[^a-z]/g, '-');
+  return 's-' + s;
+}
+
+// ============ Helpers ============
+function getInitials(name) {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length || parts[0] === '—') return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function escapeAttr(str) {
+  return escapeHtml(str);
+}
+
+function slug(str) {
+  return String(str).toLowerCase().replace(/[^a-z0-9]+/g, '_');
+}
+
+function highlightText(text, query) {
+  if (!query) return escapeHtml(text);
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return escapeHtml(text).replace(new RegExp('(' + escapedQuery + ')', 'gi'), '<mark>$1</mark>');
+}
+
+function hexToSoft(hex) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0,2), 16);
+  const g = parseInt(h.slice(2,4), 16);
+  const b = parseInt(h.slice(4,6), 16);
+  return `rgba(${r},${g},${b},0.13)`;
+}
+
+function formatCellValue(val) {
+  if (val === null || val === undefined || val === '') return '';
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return String(val);
+    const day = String(val.getDate()).padStart(2, '0');
+    const month = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][val.getMonth()];
+    const year = val.getFullYear();
+    const hours = val.getHours();
+    const mins = val.getMinutes();
+    const secs = val.getSeconds();
+    let base = `${day} ${month} ${year}`;
+    if (hours || mins || secs) {
+      base += ` ${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+      if (secs) base += `:${String(secs).padStart(2,'0')}`;
+    }
+    return base;
+  }
+  return String(val);
+}
+
+// ============ Export ============
+function exportResults() {
+  if (!currentResults.length) { showToast('Nothing to export'); return; }
+  const exportRows = currentResults.map(row => {
+    const file = loadedFiles.find(f => f.id === row.__fileId);
+    const clean = {};
+    Object.keys(row).forEach(k => {
+      if (k === '__fileId' || k === '__rowIdx') return;
+      const v = row[k];
+      clean[k] = (v instanceof Date) ? formatCellValue(v) : v;
+    });
+    return { 'Source File': file ? file.name : '', ...clean };
+  });
+  const ws = XLSX.utils.json_to_sheet(exportRows);
+  const csv = XLSX.utils.sheet_to_csv(ws);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  a.href = url;
+  a.download = `vault-lookup_${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`Exported ${currentResults.length} record${currentResults.length === 1 ? '' : 's'}`);
+}
+
+// ============ Reset ============
+function resetApp() {
+  loadedFiles = [];
+  allRows = [];
+  unionHeaders = [];
+  currentResults = [];
+  activeSourceFilter = '__ALL__';
+  fileIdCounter = 0;
+  filters = {};
+  columnMeta = {};
+  fileInput.value = '';
+  uploadView.classList.remove('hidden');
+  appView.classList.remove('active');
+  statusDot.classList.remove('active');
+  statusText.textContent = 'Awaiting files';
+}
+</script>
+
+</body>
+</html>
